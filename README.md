@@ -8,7 +8,7 @@ Export PDF file to Book.
 
 の設定で印刷することで
 
-## 半分に折り曲げて重ねると本のように読めるようになる
+### 半分に折り曲げて重ねると本のように読めるようになる
 
 という状態のPDFを出力するだけのshell scriptです。
 
@@ -23,3 +23,11 @@ Export PDF file to Book.
 [https://www.pdflabs.com/tools/pdftk-server/](url)
 
 あとはPATHが通っている場所に置いて，空白PDFも一緒に置くだけで~~実用性はないですが~~使用できます。
+
++ 使用例
+`ptob input.pdf output.pdf`
+
+これでinput.pdfがoutput.pdfという名前で印刷可能なPDFファイルとなります。
+なお実行中に強制終了してしまうと保存先ディレクトリに謎の隠しファイル**.PDFtemp**がたくさん残ってしまうので，削除のほどよろしくお願いします(ひどい仕様)
+
+偶然にも元々.PDFtempというファイルが存在する場合には実行できないようになっているので，上書きの心配はございません。

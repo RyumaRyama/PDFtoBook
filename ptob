@@ -1,0 +1,69 @@
+#!/bin/zsh
+
+# $1 : PDF file name.
+# $2 : Save path
+
+# 引数が1つではない場合終了
+if [ $# -ne 2 ] ; then
+	echo 'Use "ptob [INPUT PDF FILE NAME] [OUTPUT PDF FILE NAME]"'
+	exit 1
+fi
+# pdfファイルでない場合も終了
+if [[ ! $1 =~ .*\.pdf ]] || [[ ! $2 =~ .*\.pdf ]] ; then
+	echo 'Use "ptob [INPUT PDF FILE NAME] [OUTPUT PDF FILE NAME]"'
+	exit 1
+fi
+# ファイルが見つからない場合も終了
+if [ ! -e $1 ] ; then
+	echo 'No such PDF file.'
+	exit 1
+fi
+# 一時保存用PDFファイル名
+temp='.PDFtemp'
+# 一時保存のファイルと同名のものがあって上書きされる恐れがある
+if ls ./$temp* > /dev/null 2>&1
+then
+	echo 'Please make a directory and then execute within it.'
+	exit 1
+fi
+
+# ページ数取得
+page_num=`pdftk $1 dump_data|grep NumberOfPages|sed -e "s/NumberOfPages: \([0-9]*\)/\1/g"`
+
+# 出力に使うファイル指定
+arg=''
+
+# 参照ページ指定用変数
+index=1
+
+count=1
+
+# 空白ページ取得
+blank=`which ptob | sed -e "s/\(.*\/\).*$/\1blank.pdf/g"`
+
+while [ $page_num -ge $index ]
+do
+	# ページ入れ替えの引数
+	A='A'$index
+	B='B'
+	if [ $page_num -ge `expr $index + 1` ] ; then
+		B='A'`expr $index + 1`
+	fi
+	C='B'
+	if [ $page_num -ge `expr $index + 2` ] ; then
+		C='A'`expr $index + 2`
+	fi
+	D='B'
+	if [ $page_num -ge `expr $index + 3` ] ; then
+		D='A'`expr $index + 3`
+	fi
+
+	pdftk A=$1 B=$blank cat $D $A $B $C output $temp$count
+
+	arg=$arg" "$temp$count
+	count=`expr $count + 1`
+	index=`expr $index + 4`
+done
+
+pdftk `echo $arg` output $2
+rm `echo $arg`

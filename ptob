@@ -3,10 +3,48 @@
 # $1 : PDF file name.
 # $2 : Save path
 
+# プログレスバー表示
+Progress_bar () {
+	# $1 : 進捗
+	# $2 : 全体
+	gauge=50
+	percent=`echo "scale=3; $1 / $2" | bc`
+	bar=`echo "scale=3; $gauge * $percent" | bc | sed -e "s/\([0-9]*\)\.[0-9]*$/\1/g"`
+	percent=`echo "scale=0; $percent * 100" | bc | sed -e "s/\([0-9]*\)\.[0-9]*$/\1/g"`
+	echo -n "["
+	if [ $bar -ne 0 ] ; then
+		for i in `seq $bar`
+		do
+			if [ $i -eq $bar ] ; then
+				echo -n ">"
+			else
+				echo -n "-"
+			fi
+		done
+	fi
+	space=`expr $gauge - $bar`
+	if [ $space -ne 0 ] ; then
+		for j in `seq $space`
+		do
+			echo -n " "
+		done
+	fi
+	echo -n "]"
+	echo -n " $percent%"
+	printf "\r"
+}
+
 # 綺麗な出来上がりになるけど面倒な印刷の並び
 Attractive () {
+	# $1 : input
+	# $2 : output
+	input=$1
+	output=$2
 	# ページ数取得
-	page_num=`pdftk $1 dump_data|grep NumberOfPages|sed -e "s/NumberOfPages: \([0-9]*\)/\1/g"`
+	page_num=`pdftk $input dump_data|grep NumberOfPages|sed -e "s/NumberOfPages: \([0-9]*\)/\1/g"`
+
+	# 作業用ディレクトリ
+	mkdir $temp
 
 	# 出力に使うファイル指定
 	arg=''
@@ -19,6 +57,7 @@ Attractive () {
 	# 空白ページ取得
 	blank=`which ptob | sed -e "s/\(.*\/\).*$/\1blank.pdf/g"`
 
+	Progress_bar 0 $page_num
 	while [ $page_num -ge $index ]
 	do
 		# ページ入れ替えの引数
@@ -36,16 +75,37 @@ Attractive () {
 			D='A'`expr $index + 3`
 		fi
 
-		pdftk A=$1 B=$blank cat $D $A $B $C output $temp$count
+		pdftk A=$input B=$blank cat $D $A $B $C output $temp"/"$count
 
-		arg=$arg" "$temp$count
+		arg=$arg" "$temp"/"$count
 		count=`expr $count + 1`
 		index=`expr $index + 4`
+
+		Progress_bar `expr $index - 1` $page_num
 	done
 
-	pdftk `echo $arg` output $2
-	rm `echo $arg`
+	pdftk `echo $arg` output $output
+	rm -r $temp
+
+	Progress_bar $page_num $page_num
+	echo ""
 }
+
+Yes_No () {
+	read input
+	if [ -z $input ] ; then
+		echo -n '(Y/n)'
+		Yes_No
+	elif [ $input = 'n' ] ; then
+		exit 1
+	elif [ $input = 'Y' ] ; then
+		return
+	else
+		echo -n '(Y/n)'
+		Yes_No
+	fi
+}
+
 
 # 引数処理シリーズ
 
@@ -65,12 +125,18 @@ if [ ! -e $1 ] ; then
 	exit 1
 fi
 # 一時保存用PDFファイル名
-temp='.PDFtemp'
+temp='.PtoB_temp'
 # 一時保存のファイルと同名のものがあって上書きされる恐れがある
-if ls $temp* > /dev/null 2>&1
-then
+if [ -f ./$temp ] ; then
 	echo 'Please make a directory and then execute within it.'
 	exit 1
+else
+	if [ -d ./$temp ] ; then
+		echo '"PtoB_temp" directory exists so cannot execute.'
+		echo -n 'Delete it and execute? (Y/n)'
+		Yes_No
+		rm -r $temp
+	fi
 fi
 
 Attractive $1 $2

@@ -44,10 +44,9 @@ Progress_bar () {
 Attractive () {
 	# $1 : input
 	# $2 : output
-	input=$1
-	output=$2
+
 	# ページ数取得
-	page_num=`pdftk $input dump_data|grep NumberOfPages|sed -e "s/NumberOfPages: \([0-9]*\)/\1/g"`
+	page_num=`pdftk $1 dump_data|grep NumberOfPages|sed -e "s/NumberOfPages: \([0-9]*\)/\1/g"`
 
 	# 作業用ディレクトリ
 	mkdir $temp
@@ -81,16 +80,16 @@ Attractive () {
 			D='A'`expr $index + 3`
 		fi
 
-		pdftk A=$input B=$blank cat $D $A $B $C output $temp"/"$count
+		pdftk A=$1 B=$blank cat $D $A $B $C output $temp"/"$count
+
+		Progress_bar `expr $index - 1` $page_num
 
 		arg=$arg" "$temp"/"$count
 		count=`expr $count + 1`
 		index=`expr $index + 4`
-
-		Progress_bar `expr $index - 1` $page_num
 	done
 
-	pdftk `echo $arg` output $output
+	pdftk `echo $arg` output $2
 	rm -r $temp
 
 	Progress_bar $page_num $page_num
@@ -145,4 +144,9 @@ else
 	fi
 fi
 
-Attractive $1 $2
+#作業用ディレクトリ，input PDFファイルを作成
+mkdir $temp
+input_pdf=`echo $1 | sed -e "s/.*\/\(.*\)$/\1/g"`
+qpdf --decrypt $1 $temp"/"$input_pdf
+
+Attractive $temp"/"$input_pdf $2

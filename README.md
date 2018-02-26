@@ -8,26 +8,47 @@ Export PDF file to Book.
 
 の設定で印刷することで
 
-### 半分に折り曲げて重ねると本のように読めるようになる
+### 本のように読めるようになる
 
 という状態のPDFを出力するだけのshell scriptです。
 
-実用性皆無です。
+---
+
+#動作環境
+bashにより書かれたものなのでbash環境が必要です。
+また，このscriptはPDFをコマンドラインで操作できるコマンド**pdftk**，そして**qpdf**に依存しているため，それぞれのinstallが必要になります。
+
++ pdftk
+	本家のホームページからどうぞ
+	[https://www.pdflabs.com/tools/pdftk-server/](url)
++ qpdf
+	homebrewからインストールできます
+	`brew install qpdf`
+
+あとはPATHが通っている場所に置いて，空白PDFも一緒に置くだけで~~実用性はないですが~~使用できます。
 
 ---
 
 # 使い方
-このscriptはPDFをコマンドラインで操作できるコマンド**pdftk**に依存しているため，まずはpdftkのinstallが必要です。
+このコマンドでは2つのモードがあり，
+それぞれ印刷後の形が異なります。
 
-本家のホームページからどうぞ
-[https://www.pdflabs.com/tools/pdftk-server/](url)
++ Attractive mode(オプション:-a)
+	これは完成後の本が素晴らしい見た目になりますが，かなり面倒です。
+	印刷された一枚一枚を半分に折って重ねることで本になります。
+	ページ数が多い場合には時間がかかりますが，出来上がりが美しいです。
++ Comfortable mode(オプション:-c)
+	これは印刷後すぐに本として完成しますが，見栄えがよろしくないです。
+	いわゆる中綴じの本を作ることができ，印刷した紙を重なったまま半分におることで本になります。
+	枚数が少ないと問題ないですが，増えると内側のページが飛び出てしまうので，見た目としてはなんともいえない感じです。
 
-あとはPATHが通っている場所に置いて，空白PDFも一緒に置くだけで~~実用性はないですが~~使用できます。
+実行時には次のようにコマンドを実行します。
+`ptob <Option(-a/-c)> <Input PDF file name> <Output PDF file name>`
 
-+ 使用例
-`ptob input.pdf output.pdf`
+## 使用例
+`ptob -a input.pdf output.pdf`
 
-これでinput.pdfがoutput.pdfという名前で印刷可能なPDFファイルとなります。
+これでinput.pdfがAttractive modeで実行され，output.pdfという印刷可能なPDFファイルが出力されます。
 作業中はプログレスバーにより進行度がわかるため，のんびりお待ちください。
 
 ## 注意点

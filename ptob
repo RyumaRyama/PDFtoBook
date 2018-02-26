@@ -5,6 +5,7 @@
 
 # 作業用ディレクトリ
 temp='.PtoB_temp'
+
 # 強制終了時の後始末
 my_trap () {
 	rm -r $temp
@@ -16,6 +17,7 @@ trap 'my_trap' 1 2 3 15
 Progress_bar () {
 	# $1 : 進捗
 	# $2 : 全体
+
 	gauge=74
 	percent=`echo "scale=3; $1 / $2" | bc`
 	bar=`echo "scale=3; $gauge * $percent" | bc | sed -e "s/\([0-9]*\)\.[0-9]*$/\1/g"`
@@ -73,9 +75,7 @@ Attractive () {
 	# $1 : input
 	# $2 : output
 
-	# 参照ページ指定用変数
 	index=1
-
 	count=1
 
 	Progress_bar 0 $page_num
@@ -155,25 +155,63 @@ Comfortable () {
 }
 
 
+# 引数処理
+Arg_check () {
+	# 引数が3つではない場合終了
+	if [ $# -ne 3 ] ; then
+		echo 'Usage: "ptob [mode(-a/-c)] [INPUT PDF FILE NAME] [OUTPUT PDF FILE NAME]"'
+		exit 1
+	fi
 
+	while (( $# > 0 ))
+	do
+		case "$1" in
+			-*)
+				if [[ "$1" =~ 'a' ]]; then
+					aflag='-a'
+				fi
+				if [[ "$1" =~ 'c' ]]; then
+					cflag='-c'
+				fi
+				shift
+				;;
+			*)
+				((++argc))
+				argv=("${argv[@]}" "$1")
+				shift
+				;;
+		esac
+	done
 
-# 引数処理シリーズ
+	# pdfファイルでない場合も終了
+	if [[ ! ${argv[0]} =~ .*\.pdf ]] || [[ ! ${argv[1]} =~ .*\.pdf ]] ; then
+		echo 'Usage "ptob [mode(-a/-c)] [INPUT PDF FILE NAME] [OUTPUT PDF FILE NAME]"'
+		exit 1
+	fi
+	# ファイルが見つからない場合も終了
+	if [ ! -e ${argv[0]} ] ; then
+		echo 'No such PDF file.'
+		exit 1
+	fi
 
-# 引数が2つ以上ではない場合終了
-if [ $# -ne 2 ] ; then
-	echo 'Use "ptob [INPUT PDF FILE NAME] [OUTPUT PDF FILE NAME]"'
-	exit 1
-fi
-# pdfファイルでない場合も終了
-if [[ ! $1 =~ .*\.pdf ]] || [[ ! $2 =~ .*\.pdf ]] ; then
-	echo 'Use "ptob [INPUT PDF FILE NAME] [OUTPUT PDF FILE NAME]"'
-	exit 1
-fi
-# ファイルが見つからない場合も終了
-if [ ! -e $1 ] ; then
-	echo 'No such PDF file.'
-	exit 1
-fi
+	# 実行できるか判断
+	if [ "$aflag" = '-a' ] && [ "$cflag" != '-c' ]; then
+		echo "Execute 'Attractive mode'"
+	elif [ "$aflag" != '-a' ] && [ "$cflag" = '-c' ]; then
+		echo "Execute 'Comfortable mode'"
+	else
+		echo 'Usage "ptob [mode(-a/-c)] [INPUT PDF FILE NAME] [OUTPUT PDF FILE NAME]"'
+		exit 1
+	fi
+}
+
+# 引数
+declare -i argc=0
+declare -a argv=()
+
+Arg_check $@
+
+# 準備
 # 一時保存のファイルと同名のものがあって上書きされる恐れがある
 if [ -f ./$temp ] ; then
 	echo 'Please make a directory and then execute within it.'
@@ -186,18 +224,23 @@ else
 		rm -r $temp
 	fi
 fi
-
 #作業用ディレクトリ，input PDFファイルを作成
 mkdir -p $temp
-input_pdf=$temp"/"`echo $1 | sed -e "s/.*\/\(.*\)$/\1/g"`
-qpdf --decrypt $1 $input_pdf 2>/dev/null
+input_pdf=$temp"/"`echo ${argv[0]} | sed -e "s/.*\/\(.*\)$/\1/g"`
+qpdf --decrypt ${argv[0]} $input_pdf 2>/dev/null
 
 # 空白ページ取得
 blank=`which ptob | sed -e "s/\(.*\/\).*$/\1blank.pdf/g"`
+
 # ページ数取得
 page_num=`pdftk $input_pdf dump_data|grep NumberOfPages|sed -e "s/NumberOfPages: \([0-9]*\)/\1/g"`
 # 出力に使うファイル指定
 arg=''
 
-#Attractive $input_pdf $2
-Comfortable $input_pdf $2
+
+# 実行
+if [ $aflag = '-a' ]; then
+	Attractive $input_pdf ${argv[1]}
+elif [ $cflag = '-c' ]; then
+	Comfortable $input_pdf ${argv[1]}
+fi

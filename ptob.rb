@@ -20,7 +20,7 @@ class Ptob < Formula
 		#					  "--disable-silent-rules",
 		#					  "--prefix=#{prefix}"
 		# system "cmake", ".", *std_cmake_args
-		system "make", "install" # if this fails, try separate make/make install steps
+		#system "make", "install" # if this fails, try separate make/make install steps
 		prefix.install 'bin'
 		(bin+'brewall').chmod 0755
 	end

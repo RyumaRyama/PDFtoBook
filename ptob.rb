@@ -4,8 +4,8 @@
 HOMEBREW_BREWALL_VERSION = '0.0.1'
 class Ptob < Formula
 	desc ""
-	homepage "https://github.com/RyumaRyama/PDFtoBook"
-	url "https://github.com/RyumaRyama/PDFtoBook"
+	homepage "https://github.com/RyumaRyama/homebrew-ptob/"
+	url "https://github.com/RyumaRyama/homebrew-ptob.git"
 	version HOMEBREW_BREWALL_VERSION
 	sha256 ""
 	head 'https://github.com/RyumaRyama/homebrew-ptob.git', :branch => 'master'	

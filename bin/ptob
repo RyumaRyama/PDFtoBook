@@ -1,0 +1,246 @@
+#!/bin/bash
+
+# $1 : PDF file name.
+# $2 : Save path
+
+# 作業用ディレクトリ
+temp='.PtoB_temp'
+
+# 強制終了時の後始末
+my_trap () {
+	rm -r $temp
+	exit 1
+}
+trap 'my_trap' 1 2 3 15
+
+# プログレスバー表示
+Progress_bar () {
+	# $1 : 進捗
+	# $2 : 全体
+
+	gauge=74
+	percent=`echo "scale=3; $1 / $2" | bc`
+	bar=`echo "scale=3; $gauge * $percent" | bc | sed -e "s/\([0-9]*\)\.[0-9]*$/\1/g"`
+	percent=`echo "scale=0; $percent * 100" | bc | sed -e "s/\([0-9]*\)\.[0-9]*$/\1/g"`
+	if [ "$bar" = "" ] ; then
+		bar=0
+	fi
+	if [ "$percent" = "" ] ; then
+		percent=0
+	fi
+	echo -n "["
+	if [ $bar -ne 0 ] ; then
+		for i in `seq $bar`
+		do
+			if [ $i -eq $bar ] ; then
+				echo -n ">"
+			else
+				echo -n "-"
+			fi
+		done
+	fi
+	space=`expr $gauge - $bar`
+	if [ $space -ne 0 ] ; then
+		for j in `seq $space`
+		do
+			echo -n " "
+		done
+	fi
+	echo -n "]"
+	echo -n " $percent%"
+	printf "\r"
+}
+
+
+# Yesなら進めるやつ
+Yes_No () {
+	read input
+	if [ -z $input ] ; then
+		echo -n '(Y/n) '
+		Yes_No
+	elif [ $input = 'n' ] ; then
+		exit 1
+	elif [ $input = 'Y' ] ; then
+		return
+	else
+		echo -n '(Y/n) '
+		Yes_No
+	fi
+}
+
+
+
+# 綺麗な出来上がりになるけど面倒な印刷の並び
+Attractive () {
+	# $1 : input
+	# $2 : output
+
+	index=1
+	count=1
+
+	Progress_bar 0 $page_num
+	while [ $page_num -ge $index ]
+	do
+		# ページ入れ替えの引数
+		A='A'$index
+		B='B'
+		if [ $page_num -ge `expr $index + 1` ] ; then
+			B='A'`expr $index + 1`
+		fi
+		C='B'
+		if [ $page_num -ge `expr $index + 2` ] ; then
+			C='A'`expr $index + 2`
+		fi
+		D='B'
+		if [ $page_num -ge `expr $index + 3` ] ; then
+			D='A'`expr $index + 3`
+		fi
+
+		pdftk A=$1 B=$blank cat $D $A $B $C output $temp"/"$count
+
+		Progress_bar `expr $index - 1` $page_num
+
+		arg=$arg" "$temp"/"$count
+		count=`expr $count + 1`
+		index=`expr $index + 4`
+	done
+
+	pdftk `echo $arg` output $2
+	rm -r $temp
+
+	Progress_bar $page_num $page_num
+	echo ""
+}
+
+
+#見た目あれだけど楽なやつ
+Comfortable () {
+	# $1 : input
+	# $2 : output
+
+	# 2枚で1ページになるように調整
+	rest=`expr $page_num % 4`
+	if [ $rest -ne 0 ] ; then
+		rest=`expr 4 - $rest`
+		for i in `seq $rest`
+		do
+			pdftk $1 $blank output $1"Remake"
+			pdftk $1"Remake" output $1
+		done
+		page_num=`expr $page_num + $rest`
+	fi
+
+	Progress_bar 0 `expr $page_num / 2`
+	index=0
+	while [ $index -lt `expr $page_num / 2` ]
+	do
+		A=`expr $page_num - $index`
+		B=`expr $index + 1`
+		C=`expr $index + 2`
+		D=`expr $page_num - $B`
+		pdftk $1 cat $A $B $C $D output $temp"/"$index
+
+		arg=$arg" "$temp"/"$index
+
+		Progress_bar $index `expr $page_num / 2`
+		index=$C
+	done
+
+	Progress_bar `expr $page_num / 2` `expr $page_num / 2`
+
+	pdftk `echo $arg` output $2
+	rm -r $temp
+
+	echo ""
+}
+
+
+# 引数処理
+Arg_check () {
+	# 引数が3つではない場合終了
+	if [ $# -ne 3 ] ; then
+		echo 'Usage: "ptob [mode(-a/-c)] [INPUT PDF FILE NAME] [OUTPUT PDF FILE NAME]"'
+		exit 1
+	fi
+
+	while (( $# > 0 ))
+	do
+		case "$1" in
+			-*)
+				if [[ "$1" =~ 'a' ]]; then
+					aflag='-a'
+				fi
+				if [[ "$1" =~ 'c' ]]; then
+					cflag='-c'
+				fi
+				shift
+				;;
+			*)
+				((++argc))
+				argv=("${argv[@]}" "$1")
+				shift
+				;;
+		esac
+	done
+
+	# pdfファイルでない場合も終了
+	if [[ ! ${argv[0]} =~ .*\.pdf ]] || [[ ! ${argv[1]} =~ .*\.pdf ]] ; then
+		echo 'Usage "ptob [mode(-a/-c)] [INPUT PDF FILE NAME] [OUTPUT PDF FILE NAME]"'
+		exit 1
+	fi
+	# ファイルが見つからない場合も終了
+	if [ ! -e ${argv[0]} ] ; then
+		echo 'No such PDF file.'
+		exit 1
+	fi
+
+	# 実行できるか判断
+	if [ "$aflag" = '-a' ] && [ "$cflag" != '-c' ]; then
+		echo "Execute 'Attractive mode'"
+	elif [ "$aflag" != '-a' ] && [ "$cflag" = '-c' ]; then
+		echo "Execute 'Comfortable mode'"
+	else
+		echo 'Usage "ptob [mode(-a/-c)] [INPUT PDF FILE NAME] [OUTPUT PDF FILE NAME]"'
+		exit 1
+	fi
+}
+
+# 引数
+declare -i argc=0
+declare -a argv=()
+
+Arg_check $@
+
+# 準備
+# 一時保存のファイルと同名のものがあって上書きされる恐れがある
+if [ -f ./$temp ] ; then
+	echo 'Please make a directory and then execute within it.'
+	exit 1
+else
+	if [ -d ./$temp ] ; then
+		echo '"PtoB_temp" directory exists so cannot execute.'
+		echo -n 'Delete it and execute? (Y/n) '
+		Yes_No
+		rm -r $temp
+	fi
+fi
+#作業用ディレクトリ，input PDFファイルを作成
+mkdir -p $temp
+input_pdf=$temp"/"`echo ${argv[0]} | sed -e "s/.*\/\(.*\)$/\1/g"`
+qpdf --decrypt ${argv[0]} $input_pdf 2>/dev/null
+
+# 空白ページ取得
+blank=`which ptob | sed -e "s/\(.*\/\).*$/\1blank.pdf/g"`
+
+# ページ数取得
+page_num=`pdftk $input_pdf dump_data|grep NumberOfPages|sed -e "s/NumberOfPages: \([0-9]*\)/\1/g"`
+# 出力に使うファイル指定
+arg=''
+
+
+# 実行
+if [ $aflag = '-a' ]; then
+	Attractive $input_pdf ${argv[1]}
+elif [ $cflag = '-c' ]; then
+	Comfortable $input_pdf ${argv[1]}
+fi

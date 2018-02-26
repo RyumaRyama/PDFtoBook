@@ -1,7 +1,7 @@
 # Documentation: https://docs.brew.sh/Formula-Cookbook
 #                http://www.rubydoc.info/github/Homebrew/brew/master/Formula
 # PLEASE REMOVE ALL GENERATED COMMENTS BEFORE SUBMITTING YOUR PULL REQUEST!
-HOMEBREW_BREWALL_VERSION = '0.0.1'
+HOMEBREW_BREWALL_VERSION = '1.0.1'
 class Ptob < Formula
 	desc ""
 	homepage "https://github.com/RyumaRyama/homebrew-ptob/"

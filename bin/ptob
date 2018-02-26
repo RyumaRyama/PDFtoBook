@@ -239,8 +239,8 @@ arg=''
 
 
 # 実行
-if [ $aflag = '-a' ]; then
+if [ "$aflag" = '-a' ]; then
 	Attractive $input_pdf ${argv[1]}
-elif [ $cflag = '-c' ]; then
+elif [ "$cflag" = '-c' ]; then
 	Comfortable $input_pdf ${argv[1]}
 fi

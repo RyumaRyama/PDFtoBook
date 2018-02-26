@@ -20,14 +20,30 @@ bashにより書かれたものなのでbash環境が必要です。
 
 + pdftk
 	
-	本家のホームページからどうぞ
+	本家のホームページからよろしくお願いします
+
 	[https://www.pdflabs.com/tools/pdftk-server/](url)
 + qpdf
 	
 	homebrewからインストールできます
+
 	`brew install qpdf`
 
-あとはPATHが通っている場所に置いて，空白PDFも一緒に置くだけで~~実用性はないですが~~使用できます。
+
+---
+
+# Install方法
+`brew tap RyumaRyama/ptob`
+
+`brew install ptob`
+
+によりinstallを行えます。
+
+削除する際は，
+
+`brew uninstall ptob`
+
+でお願いします。
 
 ---
 
@@ -48,6 +64,11 @@ bashにより書かれたものなのでbash環境が必要です。
 
 実行時には次のようにコマンドを実行します。
 `ptob <Option(-a/-c)> <Input PDF file name> <Output PDF file name>`
+
+
+出力されたPDFファイルを印刷する際には両面印刷を行い，
+1ページに2ページ分を左右分割で印刷することで本にすることができます。
+
 
 ## 使用例
 `ptob -a input.pdf output.pdf`

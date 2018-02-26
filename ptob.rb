@@ -5,7 +5,7 @@ HOMEBREW_BREWALL_VERSION = '0.0.1'
 class Ptob < Formula
 	desc ""
 	homepage "https://github.com/RyumaRyama/PDFtoBook"
-	url "https://github.com/RyumaRyama/PDFtoBook", :tag => "v#{HOMEBREW_BREWALL_VERSION}"
+	url "https://github.com/RyumaRyama/PDFtoBook"
 	version HOMEBREW_BREWALL_VERSION
 	sha256 ""
 	head 'https://github.com/RyumaRyama/homebrew-ptob.git', :branch => 'master'	
@@ -21,10 +21,10 @@ class Ptob < Formula
 		#					  "--prefix=#{prefix}"
 		# system "cmake", ".", *std_cmake_args
 		#system "make", "install" # if this fails, try separate make/make install steps
-		prefix.install 'bin'
-		(bin+'brewall').chmod 0755
+		bin.install "bin/ptob"
+		bin.install "bin/blank.pdf"
 	end
-	#test do
+	test do
 		# `test do` will create, run in and delete a temporary directory.
 		#
 		# This test will fail and we won't accept that! For Homebrew/homebrew-core
@@ -34,6 +34,6 @@ class Ptob < Formula
 		#
 		# The installed folder is not in the path, so use the entire path to any
 		# executables being tested: `system "#{bin}/program", "do", "something"`.
-		#system "false"
-	#end
+		system "false"
+	end
 end

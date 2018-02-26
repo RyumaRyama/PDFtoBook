@@ -73,17 +73,10 @@ Attractive () {
 	# $1 : input
 	# $2 : output
 
-
-	# 出力に使うファイル指定
-	arg=''
-
 	# 参照ページ指定用変数
 	index=1
 
 	count=1
-
-	# 空白ページ取得
-	blank=`which ptob | sed -e "s/\(.*\/\).*$/\1blank.pdf/g"`
 
 	Progress_bar 0 $page_num
 	while [ $page_num -ge $index ]
@@ -124,7 +117,41 @@ Attractive () {
 Comfortable () {
 	# $1 : input
 	# $2 : output
-	echo "hoge"
+
+	# 2枚で1ページになるように調整
+	rest=`expr $page_num % 4`
+	if [ $rest -ne 0 ] ; then
+		rest=`expr 4 - $rest`
+		for i in `seq $rest`
+		do
+			pdftk $1 $blank output $1"Remake"
+			pdftk $1"Remake" output $1
+		done
+		page_num=`expr $page_num + $rest`
+	fi
+
+	Progress_bar 0 `expr $page_num / 2`
+	index=0
+	while [ $index -lt `expr $page_num / 2` ]
+	do
+		A=`expr $page_num - $index`
+		B=`expr $index + 1`
+		C=`expr $index + 2`
+		D=`expr $page_num - $B`
+		pdftk $1 cat $A $B $C $D output $temp"/"$index
+
+		arg=$arg" "$temp"/"$index
+
+		Progress_bar $index `expr $page_num / 2`
+		index=$C
+	done
+
+	Progress_bar `expr $page_num / 2` `expr $page_num / 2`
+
+	pdftk `echo $arg` output $2
+	rm -r $temp
+
+	echo ""
 }
 
 
@@ -162,10 +189,15 @@ fi
 
 #作業用ディレクトリ，input PDFファイルを作成
 mkdir -p $temp
-input_pdf=`echo $1 | sed -e "s/.*\/\(.*\)$/\1/g"`
-qpdf --decrypt $1 $temp"/"$input_pdf 2>/dev/null
+input_pdf=$temp"/"`echo $1 | sed -e "s/.*\/\(.*\)$/\1/g"`
+qpdf --decrypt $1 $input_pdf 2>/dev/null
 
+# 空白ページ取得
+blank=`which ptob | sed -e "s/\(.*\/\).*$/\1blank.pdf/g"`
 # ページ数取得
-page_num=`pdftk $temp"/"$input_pdf dump_data|grep NumberOfPages|sed -e "s/NumberOfPages: \([0-9]*\)/\1/g"`
+page_num=`pdftk $input_pdf dump_data|grep NumberOfPages|sed -e "s/NumberOfPages: \([0-9]*\)/\1/g"`
+# 出力に使うファイル指定
+arg=''
 
-Attractive $temp"/"$input_pdf $2
+#Attractive $input_pdf $2
+Comfortable $input_pdf $2

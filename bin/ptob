@@ -18,7 +18,7 @@ Progress_bar () {
 	# $1 : 進捗
 	# $2 : 全体
 
-	gauge=74
+	gauge=73
 	percent=`echo "scale=3; $1 / $2" | bc`
 	bar=`echo "scale=3; $gauge * $percent" | bc | sed -e "s/\([0-9]*\)\.[0-9]*$/\1/g"`
 	percent=`echo "scale=0; $percent * 100" | bc | sed -e "s/\([0-9]*\)\.[0-9]*$/\1/g"`
